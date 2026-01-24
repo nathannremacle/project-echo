@@ -1,0 +1,5 @@
+# Ignore sensitive configuration files
+# Only commit the template, not actual channel configs with secrets
+*.local.yaml
+secrets.yaml
+credentials.yaml

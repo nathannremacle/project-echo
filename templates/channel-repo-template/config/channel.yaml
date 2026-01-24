@@ -1,0 +1,30 @@
+# Channel Configuration Template
+# Copy this file and customize for your channel
+
+channel:
+  name: "Channel Name"  # Display name for this channel
+  youtube_channel_id: "UCXXXXXXXXXXXXXX"  # YouTube channel ID (starts with UC)
+  
+  # Posting Schedule
+  schedule:
+    frequency: "daily"  # daily, weekly, custom
+    times: ["10:00", "18:00"]  # Times to post (24-hour format)
+    days: ["monday", "tuesday", "wednesday", "thursday", "friday"]  # Days to post
+    
+  # Effect Presets
+  effect_preset_id: "default"  # ID of transformation preset to use
+  
+  # Content Filters
+  content_filters:
+    min_resolution: "1080p"  # Minimum video resolution
+    prefer_no_watermark: true  # Prefer videos without watermarks
+    min_views: 10000  # Minimum view count for viral content
+    
+  # Metadata Templates
+  metadata:
+    title_template: "{{video_title}} | Edit"
+    description_template: "Check out this amazing edit!\n\n#edit #shorts"
+    tags: ["edit", "shorts", "viral"]
+    
+  # Status
+  enabled: true  # Set to false to pause this channel

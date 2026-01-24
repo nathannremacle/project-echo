@@ -1,0 +1,7 @@
+# Channel Repository Python Dependencies
+# Most functionality comes from shared libraries
+# Add channel-specific dependencies here if needed
+
+# Basic dependencies (if needed for channel-specific scripts)
+# requests==2.31.0
+# python-dotenv==1.0.0

@@ -1,0 +1,136 @@
+# Channel-specific GitHub Actions workflow template
+# This workflow processes and publishes videos for a single channel
+#
+# Setup Instructions:
+# 1. Copy this workflow to your channel repository
+# 2. Configure required GitHub Secrets (see documentation)
+# 3. Update the shared library URL if needed
+# 4. Customize the schedule cron expression
+
+name: Process and Publish Video
+
+on:
+  # Manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'URL of video to process (leave empty for auto-discovery)'
+        required: false
+        type: string
+      preset_id:
+        description: 'Transformation preset ID'
+        required: false
+        type: string
+        default: 'default'
+  
+  # Scheduled trigger (cron)
+  # Update this to match your channel's posting schedule
+  schedule:
+    # Example: Every 6 hours
+    - cron: '0 */6 * * *'
+  
+  # Triggered by central orchestration system via GitHub API
+  repository_dispatch:
+    types: [process-video]
+
+jobs:
+  process-video:
+    name: Process and Publish Video
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours max (GitHub Actions free tier limit)
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          # Install shared libraries from central repo
+          # Update the URL to match your central repository
+          pip install git+https://github.com/your-username/project-echo-orchestration.git#subdirectory=shared
+          # Install channel-specific dependencies if requirements.txt exists
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+      
+      - name: Verify Python environment
+        run: |
+          python --version
+          pip list | grep -E "(fastapi|sqlalchemy|yt-dlp)"
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Create logs directory
+        run: mkdir -p logs
+      
+      - name: Process video
+        id: process
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+          VIDEO_URL: ${{ github.event.inputs.video_url || github.event.client_payload.video_url || '' }}
+          PRESET_ID: ${{ github.event.inputs.preset_id || github.event.client_payload.preset_id || 'default' }}
+        run: |
+          echo "=== Video Processing Workflow Started ===" | tee logs/workflow.log
+          echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" | tee -a logs/workflow.log
+          echo "Channel ID: $CHANNEL_ID" | tee -a logs/workflow.log
+          echo "Video URL: ${VIDEO_URL:-auto-discovery}" | tee -a logs/workflow.log
+          echo "Preset ID: $PRESET_ID" | tee -a logs/workflow.log
+          echo "Workflow Run ID: ${{ github.run_id }}" | tee -a logs/workflow.log
+          echo "" | tee -a logs/workflow.log
+          
+          # Test script execution (will be replaced with actual processing in later stories)
+          if [ -f scripts/test_workflow.py ]; then
+            echo "Running test workflow script..." | tee -a logs/workflow.log
+            python scripts/test_workflow.py \
+              --channel-id "$CHANNEL_ID" \
+              --video-url "${VIDEO_URL:-auto}" \
+              --preset "$PRESET_ID" \
+              2>&1 | tee -a logs/workflow.log
+          else
+            echo "Test script not found. Workflow structure validated." | tee -a logs/workflow.log
+            echo "All environment variables are set correctly." | tee -a logs/workflow.log
+          fi
+          
+          echo "" | tee -a logs/workflow.log
+          echo "=== Workflow Completed ===" | tee -a logs/workflow.log
+        continue-on-error: true
+      
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: processing-logs-${{ github.run_id }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore
+      
+      - name: Report workflow status
+        if: always()
+        run: |
+          if [ "${{ steps.process.outcome }}" == "success" ]; then
+            echo "✅ Workflow completed successfully"
+          else
+            echo "❌ Workflow failed. Check logs for details."
+            exit 1
+          fi

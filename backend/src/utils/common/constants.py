@@ -1,0 +1,71 @@
+"""
+Application-wide constants
+"""
+
+# API Constants
+API_VERSION = "v1"
+API_PREFIX = f"/api/{API_VERSION}"
+
+# Video Processing Constants
+MAX_VIDEO_DURATION_SECONDS = 600  # 10 minutes
+MIN_VIDEO_DURATION_SECONDS = 5
+SUPPORTED_VIDEO_FORMATS = [".mp4", ".avi", ".mov", ".mkv"]
+SUPPORTED_VIDEO_CODECS = ["h264", "vp9", "av1"]
+
+# YouTube Constants
+YOUTUBE_CHANNEL_ID_PREFIX = "UC"
+YOUTUBE_VIDEO_ID_LENGTH = 11
+YOUTUBE_MAX_TITLE_LENGTH = 100
+YOUTUBE_MAX_DESCRIPTION_LENGTH = 5000
+YOUTUBE_MAX_TAGS = 500
+
+# Rate Limiting Constants
+RATE_LIMIT_API_REQUESTS_PER_MINUTE = 100
+RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE = 5
+RATE_LIMIT_PROCESSING_REQUESTS_PER_HOUR = 10
+
+# Retry Constants
+MAX_RETRY_ATTEMPTS = 3
+RETRY_BACKOFF_BASE = 1  # seconds
+RETRY_BACKOFF_MAX = 8  # seconds
+
+# File Size Constants
+MAX_FILE_SIZE_MB = 500  # 500 MB
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
+# Time Constants
+DEFAULT_TIMEOUT_SECONDS = 30
+VIDEO_PROCESSING_TIMEOUT_SECONDS = 3600  # 1 hour
+
+# Status Constants
+class JobStatus:
+    """Job status constants"""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ChannelStatus:
+    """Channel status constants"""
+    ACTIVE = "active"
+    PAUSED = "paused"
+    ERROR = "error"
+    DISABLED = "disabled"
+
+
+# Error Codes
+class ErrorCode:
+    """Error code constants"""
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    NOT_FOUND = "NOT_FOUND"
+    UNAUTHORIZED = "UNAUTHORIZED"
+    FORBIDDEN = "FORBIDDEN"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
+    EXTERNAL_API_ERROR = "EXTERNAL_API_ERROR"
+    PROCESSING_ERROR = "PROCESSING_ERROR"
+    DATABASE_ERROR = "DATABASE_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    CONFIGURATION_ERROR = "CONFIGURATION_ERROR"
+    NETWORK_ERROR = "NETWORK_ERROR"
