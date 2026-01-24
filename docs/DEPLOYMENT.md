@@ -131,15 +131,16 @@ git push origin main
 
 2. **Configurer le Backend:**
    - **Type**: Web Service
-   - **Source**: `/backend`
+   - **Source**: `/` (racine du dépôt, **pas** `/backend`) — nécessaire pour que le module `shared` (sibling de `backend/`) soit disponible. Voir [DIGITALOCEAN_APP_PLATFORM_BACKEND.md](DIGITALOCEAN_APP_PLATFORM_BACKEND.md).
    - **Build Command**: 
      ```bash
-     pip install -r requirements.txt
+     cd backend && pip install -r requirements.txt
      ```
    - **Run Command**: 
      ```bash
-     uvicorn src.main:app --host 0.0.0.0 --port $PORT
+     sh backend/start.sh
      ```
+     (ou laisser le Procfile à la racine : `web: sh backend/start.sh`)
    - **Environment Variables**:
      ```
      DATABASE_URL=<postgresql-url>

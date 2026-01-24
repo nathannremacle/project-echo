@@ -1,0 +1,6 @@
+"""
+Project Echo shared package - scraping, download, transformation utilities.
+Must be on PYTHONPATH (repo root when running from backend) for imports like:
+  from shared.src.scraping import ...
+  from shared.src.download import ...
+"""

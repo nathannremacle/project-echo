@@ -37,9 +37,9 @@
 - [ ] App Platform créé sur DigitalOcean
 - [ ] Repository GitHub connecté
 - [ ] Component Backend configuré:
-  - [ ] Source: `/backend`
-  - [ ] Build command: `pip install -r requirements.txt`
-  - [ ] Run command: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
+  - [ ] Source: `/` (racine du dépôt, pas `/backend`) — requis pour le module `shared`
+  - [ ] Build command: `cd backend && pip install -r requirements.txt`
+  - [ ] Run command: `sh backend/start.sh`
   - [ ] Environment variables configurées
 - [ ] Component Database ajouté (PostgreSQL)
 - [ ] Component Frontend configuré:
