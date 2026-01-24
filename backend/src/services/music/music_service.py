@@ -160,7 +160,7 @@ class MusicService:
             spotify_track_url=spotify_url,
             file_size=validation_result["size"],
             duration=validation_result.get("duration"),
-            metadata=json.dumps(metadata or {}),
+            metadata_info=json.dumps(metadata or {}),
         )
         
         # Save to database first to get ID

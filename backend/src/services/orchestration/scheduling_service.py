@@ -85,7 +85,7 @@ class SchedulingService:
                 scheduled_at=scheduled_at,
                 coordination_group_id=coordination_group_id,
                 wave_id=wave_id,
-                metadata=json.dumps(metadata) if metadata else None,
+                metadata_info=json.dumps(metadata) if metadata else None,
                 status="pending",
             )
             schedule = self.schedule_repo.create(schedule)
@@ -155,7 +155,7 @@ class SchedulingService:
                 delay_seconds=delay_seconds * index,
                 coordination_group_id=coordination_group_id,
                 wave_id=wave_id,
-                metadata=json.dumps(metadata) if metadata else None,
+                metadata_info=json.dumps(metadata) if metadata else None,
                 status="pending",
             )
             schedule = self.schedule_repo.create(schedule)
@@ -207,7 +207,7 @@ class SchedulingService:
             video_id=video_id,
             schedule_type="independent",
             scheduled_at=scheduled_at,
-            metadata=json.dumps(metadata) if metadata else None,
+            metadata_info=json.dumps(metadata) if metadata else None,
             status="pending",
         )
         schedule = self.schedule_repo.create(schedule)

@@ -44,8 +44,8 @@ class PublicationSchedule(Base):
     coordination_group_id = Column(String(36), nullable=True)  # For simultaneous/staggered coordination
     wave_id = Column(String(36), nullable=True)  # For viral wave publications
     
-    # Additional metadata (JSON)
-    metadata = Column(Text, nullable=True)  # JSON string for additional data
+    # Additional metadata (JSON) - attribute named metadata_info to avoid SQLAlchemy reserved "metadata"
+    metadata_info = Column(Text, nullable=True)  # JSON string for additional data
 
     # Pause/resume
     is_paused = Column(Boolean, nullable=False, default=False, server_default="0")

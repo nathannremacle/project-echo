@@ -31,8 +31,8 @@ class Music(Base):
     file_size = Column(Integer, nullable=True)  # bytes
     duration = Column(Integer, nullable=True)  # seconds
 
-    # Metadata (JSON)
-    metadata = Column(Text, nullable=True)  # JSON string with additional metadata
+    # Additional metadata (JSON) - attribute named metadata_info to avoid SQLAlchemy reserved "metadata"
+    metadata_info = Column(Text, nullable=True)  # JSON string with additional metadata
 
     # Usage tracking
     usage_count = Column(Integer, nullable=False, default=0)
