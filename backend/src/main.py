@@ -27,6 +27,7 @@ app = FastAPI(
     description="Multi-channel YouTube automation system",
     docs_url="/docs",
     redoc_url="/redoc",
+    root_path="/api",
 )
 
 # CORS middleware
