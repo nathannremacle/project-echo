@@ -21,19 +21,19 @@ from src.api.enhanced_analytics import router as enhanced_analytics_router
 setup_logging()
 
 # Create FastAPI app
+# Note: root_path is not needed here because DigitalOcean strips /api before forwarding
 app = FastAPI(
     title="Project Echo API",
     version="1.0.0",
     description="Multi-channel YouTube automation system",
     docs_url="/docs",
     redoc_url="/redoc",
-    root_path="/api",
 )
 
-# CORS middleware
+# CORS middleware - allow all origins for now
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
