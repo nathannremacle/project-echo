@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 from src.services.orchestration.central_orchestration_service import CentralOrchestrationService
 
-router = APIRouter(prefix="/api/orchestration", tags=["Orchestration"])
+router = APIRouter(prefix="/orchestration", tags=["Orchestration"])
 
 
 class CoordinatePublicationRequest(BaseModel):

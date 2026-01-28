@@ -11,7 +11,7 @@ from src.database import get_db
 from src.services.creator_attribution.creator_attribution_service import CreatorAttributionService
 from src.utils.exceptions import NotFoundError, ValidationError
 
-router = APIRouter(prefix="/api/creators", tags=["Creator Attribution"])
+router = APIRouter(prefix="/creators", tags=["Creator Attribution"])
 
 
 class AttributeVideoRequest(BaseModel):

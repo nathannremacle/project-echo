@@ -11,7 +11,7 @@ from src.database import get_db
 from src.services.phase2.phase2_service import Phase2Service
 from src.utils.exceptions import NotFoundError, ValidationError, ProcessingError
 
-router = APIRouter(prefix="/api/phase2", tags=["Phase 2"])
+router = APIRouter(prefix="/phase2", tags=["Phase 2"])
 
 
 class ActivatePhase2Request(BaseModel):

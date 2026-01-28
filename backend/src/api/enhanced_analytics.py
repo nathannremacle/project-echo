@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 from src.services.enhanced_analytics.enhanced_analytics_service import EnhancedAnalyticsService
 
-router = APIRouter(prefix="/api/analytics", tags=["Enhanced Analytics"])
+router = APIRouter(prefix="/analytics", tags=["Enhanced Analytics"])
 
 
 @router.get("/music-promotion")

@@ -11,7 +11,7 @@ from src.database import get_db
 from src.services.audio_replacement.audio_replacement_service import AudioReplacementService
 from src.utils.exceptions import NotFoundError, ValidationError, ProcessingError
 
-router = APIRouter(prefix="/api/videos", tags=["Audio Replacement"])
+router = APIRouter(prefix="/videos", tags=["Audio Replacement"])
 
 
 class ReplaceAudioRequest(BaseModel):

@@ -10,7 +10,7 @@ from src.database import get_db
 from src.services.music.music_service import MusicService
 from src.utils.exceptions import ValidationError, ProcessingError
 
-router = APIRouter(prefix="/api/music", tags=["Music"])
+router = APIRouter(prefix="/music", tags=["Music"])
 
 
 @router.get("")
