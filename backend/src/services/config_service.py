@@ -82,6 +82,18 @@ class ConfigService:
                 "value": 3,
                 "description": "Default number of retry attempts for failed jobs",
             },
+            "orchestration_running": {
+                "value": False,
+                "description": "Orchestration system running status",
+            },
+            "orchestration_paused": {
+                "value": False,
+                "description": "Orchestration system paused status",
+            },
+            "queue_paused": {
+                "value": False,
+                "description": "Queue processing paused status",
+            },
         }
 
         for key, config in defaults.items():

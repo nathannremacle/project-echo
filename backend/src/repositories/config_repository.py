@@ -36,8 +36,8 @@ class ConfigRepository:
 
     def set(self, key: str, value: Any, description: Optional[str] = None, encrypted: bool = False) -> SystemConfiguration:
         """Set configuration value"""
-        # Convert value to JSON string if it's a dict/list
-        if isinstance(value, (dict, list)):
+        # Serialize as JSON for dict/list/bool so get() returns proper types
+        if isinstance(value, (dict, list, bool)) or value is None:
             value_str = json.dumps(value)
         else:
             value_str = str(value)
