@@ -1,3 +1,7 @@
+# NOTE: The 'shared' module must be installed separately:
+#   pip install -e ../shared
+# This installs the shared libraries (scraping, download, transformation) used by the backend.
+
 # FastAPI and server
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
