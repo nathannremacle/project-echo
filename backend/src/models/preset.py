@@ -37,7 +37,7 @@ class TransformationPreset(Base):
 
     # Relationships
     channels = relationship("Channel", back_populates="transformation_preset")
-    videos = relationship("Video", back_populates="preset")
+    videos = relationship("Video", back_populates="transformation_preset")
 
     def __repr__(self) -> str:
         return f"<TransformationPreset(id={self.id}, name={self.name})>"
