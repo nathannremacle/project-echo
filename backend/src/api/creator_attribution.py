@@ -129,7 +129,7 @@ async def bulk_attribute_videos(
 
 @router.get("/export")
 async def export_creators(
-    format: str = Query("json", regex="^(json|csv)$"),
+    format: str = Query("json", pattern="^(json|csv)$"),
     db: Session = Depends(get_db),
 ):
     """Export list of all creators and their videos"""
