@@ -46,6 +46,14 @@ class ChannelUpdate(BaseModel):
     metadataTemplate: Optional[MetadataTemplate] = None
 
 
+class ChannelCreate(BaseModel):
+    """Minimal payload for creating a channel (test/demo). Uses placeholder credentials."""
+    name: str
+    youtubeChannelId: str
+    youtubeChannelUrl: Optional[str] = None  # Auto-built from ID if omitted
+    isActive: bool = True
+
+
 def _channel_to_dict(channel) -> dict:
     """Convert channel ORM to camelCase dict for frontend"""
     posting = {}
@@ -94,6 +102,45 @@ def _channel_to_dict(channel) -> dict:
         "lastPublicationAt": channel.last_publication_at.isoformat() if channel.last_publication_at else None,
         "phase2Enabled": channel.phase2_enabled,
     }
+
+
+@router.get("")
+async def list_channels(
+    active_only: bool = Query(False, description="Filter to active channels only"),
+    db: Session = Depends(get_db),
+):
+    """List all channels"""
+    from src.repositories.channel_repository import ChannelRepository
+    channel_repo = ChannelRepository(db)
+    channels = channel_repo.get_all(active_only=active_only)
+    return {"channels": [_channel_to_dict(c) for c in channels]}
+
+
+@router.post("")
+async def create_channel(
+    payload: ChannelCreate,
+    db: Session = Depends(get_db),
+):
+    """Create a new channel (test/demo mode with placeholder credentials)"""
+    service = ChannelConfigurationService(db)
+    youtube_url = payload.youtubeChannelUrl or f"https://www.youtube.com/channel/{payload.youtubeChannelId}"
+    api_credentials = {
+        "type": "placeholder",
+        "test": True,
+        "client_id": "placeholder",
+        "client_secret": "placeholder",
+    }
+    try:
+        channel = service.create_channel(
+            name=payload.name,
+            youtube_channel_id=payload.youtubeChannelId,
+            youtube_channel_url=youtube_url,
+            api_credentials=api_credentials,
+            is_active=payload.isActive,
+        )
+        return _channel_to_dict(channel)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 def _channel_stats_to_dict(stats) -> dict:

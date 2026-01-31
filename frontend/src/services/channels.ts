@@ -69,7 +69,21 @@ export interface ChannelUpdate {
   metadataTemplate?: MetadataTemplate;
 }
 
+export interface ChannelCreate {
+  name: string;
+  youtubeChannelId: string;
+  youtubeChannelUrl?: string;
+  isActive?: boolean;
+}
+
 export const channelService = {
+  // List all channels
+  getChannels: async (activeOnly?: boolean): Promise<{ channels: Channel[] }> => {
+    const params = activeOnly ? '?active_only=true' : '';
+    const response = await apiClient.get(`/api/channels${params}`);
+    return response.data;
+  },
+
   // Get channel by ID
   getChannel: async (channelId: string): Promise<Channel> => {
     const response = await apiClient.get(`/api/channels/${channelId}`);
@@ -107,6 +121,12 @@ export const channelService = {
   // Enable Phase 2
   enablePhase2: async (channelId: string): Promise<Channel> => {
     const response = await apiClient.post(`/api/channels/${channelId}/enable-phase2`);
+    return response.data;
+  },
+
+  // Create channel (test/demo mode with placeholder credentials)
+  createChannel: async (data: ChannelCreate): Promise<Channel> => {
+    const response = await apiClient.post('/api/channels', data);
     return response.data;
   },
 };
