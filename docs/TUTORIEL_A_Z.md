@@ -133,23 +133,23 @@ Le **YouTube Channel ID** est un identifiant unique (format `UC` + 22 caractère
 
 ---
 
-## 4. Configurer OAuth pour publier sur YouTube (avancé)
+## 4. Configurer OAuth pour publier sur YouTube
 
-Pour publier réellement sur YouTube, il faut des credentials OAuth 2.0.
+Pour publier réellement sur YouTube, il faut configurer les credentials OAuth 2.0 **directement dans l’interface**.
 
-### Créer un projet Google Cloud
+### Étape 1 : Créer un projet Google Cloud
 
 1. Aller sur [Google Cloud Console](https://console.cloud.google.com/)
 2. Créer un projet (ou en sélectionner un)
 3. Activer **YouTube Data API v3** : APIs & Services → Library → YouTube Data API v3 → Enable
 
-### Créer des credentials OAuth
+### Étape 2 : Créer des credentials OAuth
 
 1. **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
 2. Type : **Desktop app**
-3. Télécharger le fichier JSON (client_id, client_secret)
+3. Télécharger le fichier JSON (contient `client_id` et `client_secret`)
 
-### Obtenir le Refresh Token
+### Étape 3 : Obtenir le Refresh Token
 
 ```bash
 cd backend
@@ -161,12 +161,17 @@ python scripts/setup_youtube_oauth.py path/to/credentials.json
 3. Autoriser l’accès
 4. Le script affiche le **refresh_token** à copier
 
-### Configurer la chaîne avec les vrais credentials
+### Étape 4 : Saisir les credentials dans l’interface
 
-Actuellement, l’interface ne permet pas de saisir les credentials OAuth. Il faut soit :
+1. Aller dans **Channels** → cliquer sur la chaîne
+2. Sur la page de détail, ouvrir la section **« Credentials YouTube OAuth »**
+3. Remplir les champs :
+   - **Client ID** : depuis le fichier JSON ou Google Cloud Console
+   - **Client Secret** : depuis le fichier JSON ou Google Cloud Console
+   - **Refresh Token** : obtenu via le script `setup_youtube_oauth.py`
+4. Cliquer sur **« Enregistrer les credentials »**
 
-- Utiliser l’API backend pour mettre à jour les credentials
-- Ou attendre une future évolution de l’interface
+Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peut ensuite publier sur YouTube.
 
 ---
 
@@ -255,7 +260,7 @@ Actuellement, l’interface ne permet pas de saisir les credentials OAuth. Il fa
 → C’est un avertissement pour les chaînes sans dépôt GitHub. Pas bloquant pour une chaîne de test.
 
 **Comment publier vraiment sur YouTube ?**  
-→ Configurer OAuth (Google Cloud + script `setup_youtube_oauth.py`) et mettre à jour les credentials de la chaîne.
+→ Configurer OAuth (Google Cloud + script `setup_youtube_oauth.py`), puis saisir Client ID, Client Secret et Refresh Token dans la page de détail de la chaîne (section « Credentials YouTube OAuth »).
 
 **La chaîne de test peut-elle publier ?**  
 → Non, elle utilise des credentials factices. Elle sert à tester l’interface.

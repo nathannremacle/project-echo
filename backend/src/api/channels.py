@@ -54,6 +54,13 @@ class ChannelCreate(BaseModel):
     isActive: bool = True
 
 
+class OAuthCredentials(BaseModel):
+    """YouTube OAuth 2.0 credentials for channel publication."""
+    clientId: str
+    clientSecret: str
+    refreshToken: str
+
+
 def _channel_to_dict(channel) -> dict:
     """Convert channel ORM to camelCase dict for frontend"""
     posting = {}
@@ -272,6 +279,36 @@ async def get_channel_statistics(
             "viewGrowth": round(view_growth, 2),
         },
     }
+
+
+@router.put("/{channel_id}/credentials")
+async def update_channel_credentials(
+    channel_id: str,
+    credentials: OAuthCredentials,
+    db: Session = Depends(get_db),
+):
+    """Update YouTube OAuth credentials for channel publication"""
+    service = ChannelConfigurationService(db)
+    api_credentials = {
+        "client_id": credentials.clientId,
+        "client_secret": credentials.clientSecret,
+        "refresh_token": credentials.refreshToken,
+    }
+    try:
+        channel = service.update_api_credentials(
+            channel_id=channel_id,
+            api_credentials=api_credentials,
+        )
+        return _channel_to_dict(channel)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        if "ENCRYPTION_KEY" in str(e):
+            raise HTTPException(
+                status_code=500,
+                detail="ENCRYPTION_KEY not configured. Set it in environment variables.",
+            )
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/{channel_id}/activate")

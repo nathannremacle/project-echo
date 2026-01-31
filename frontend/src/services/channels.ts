@@ -129,4 +129,13 @@ export const channelService = {
     const response = await apiClient.post('/api/channels', data);
     return response.data;
   },
+
+  // Update YouTube OAuth credentials for channel publication
+  updateCredentials: async (
+    channelId: string,
+    credentials: { clientId: string; clientSecret: string; refreshToken: string }
+  ): Promise<Channel> => {
+    const response = await apiClient.put(`/api/channels/${channelId}/credentials`, credentials);
+    return response.data;
+  },
 };

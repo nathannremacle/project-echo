@@ -17,6 +17,7 @@ import { channelService, Channel, ChannelUpdate } from '../services/channels';
 import ChannelInfo from '../components/channel/ChannelInfo';
 import ChannelStatistics from '../components/channel/ChannelStatistics';
 import ChannelConfiguration from '../components/channel/ChannelConfiguration';
+import ChannelCredentials from '../components/channel/ChannelCredentials';
 
 export default function ChannelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -162,7 +163,13 @@ export default function ChannelDetail() {
 
         {/* Right Column */}
         <Grid item xs={12} md={4}>
-          <ChannelConfiguration channel={channel} onSave={handleSave} />
+          <Box display="flex" flexDirection="column" gap={3}>
+            <ChannelCredentials
+              channelId={channel.id}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ['channel', id] })}
+            />
+            <ChannelConfiguration channel={channel} onSave={handleSave} />
+          </Box>
         </Grid>
       </Grid>
     </Box>
