@@ -165,13 +165,32 @@ class QueueService:
         
         return jobs
 
+    def cancel_job(self, job_id: str) -> None:
+        """
+        Cancel a queued or retrying job (removes it from the queue)
+
+        Args:
+            job_id: Job ID
+
+        Raises:
+            NotFoundError: If job not found
+            ValueError: If job cannot be cancelled (e.g. already processing)
+        """
+        job = self.job_repo.get_by_id(job_id)
+        if not job:
+            raise NotFoundError(f"Job {job_id} not found", resource_type="job")
+        if job.status not in ("queued", "retrying"):
+            raise ValueError(f"Job {job_id} cannot be cancelled (status: {job.status})")
+        self.job_repo.delete(job_id)
+        logger.info(f"Cancelled job {job_id}")
+
     def retry_job(self, job_id: str) -> VideoProcessingJob:
         """
         Retry a failed job
-        
+
         Args:
             job_id: Job ID
-            
+
         Returns:
             Updated VideoProcessingJob object
         """
@@ -193,8 +212,33 @@ class QueueService:
         
         job = self.job_repo.update(job)
         logger.info(f"Retrying job {job_id} (attempt {job.attempts + 1}/{job.max_attempts})")
-        
+
         return job
+
+    def retry_video(self, video_id: str) -> Video:
+        """
+        Retry the most recent failed job for a video, then return the video.
+
+        Args:
+            video_id: Video ID
+
+        Returns:
+            Video object
+        """
+        video = self.video_repo.get_by_id(video_id)
+        if not video:
+            raise NotFoundError(f"Video {video_id} not found", resource_type="video")
+        jobs = self.job_repo.get_by_video_id(video_id)
+        failed_jobs = [j for j in jobs if j.status == "failed"]
+        if not failed_jobs:
+            raise ValueError(f"No failed jobs found for video {video_id}")
+        # Retry the most recent failed job
+        job = failed_jobs[0]
+        self.retry_job(job.id)
+        video = self.video_repo.get_by_id(video_id)
+        if not video:
+            raise NotFoundError(f"Video {video_id} not found after retry", resource_type="video")
+        return video
 
     def _execute_job(self, job: VideoProcessingJob) -> None:
         """

@@ -83,3 +83,31 @@ class VideoRepository:
     def count_by_channel(self, channel_id: str) -> int:
         """Count videos for a channel"""
         return self.db.query(Video).filter(Video.channel_id == channel_id).count()
+
+    def get_all(
+        self,
+        channel_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> tuple[List[Video], int]:
+        """Get all videos with optional filters. status filters download_status, transformation_status, or publication_status."""
+        query = self.db.query(Video)
+        if channel_id:
+            query = query.filter(Video.channel_id == channel_id)
+        if status:
+            query = query.filter(
+                or_(
+                    Video.download_status == status,
+                    Video.transformation_status == status,
+                    Video.publication_status == status,
+                )
+            )
+        total = query.count()
+        query = query.order_by(Video.created_at.desc())
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        videos = query.all()
+        return videos, total

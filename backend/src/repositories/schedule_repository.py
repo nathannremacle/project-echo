@@ -177,3 +177,35 @@ class ScheduleRepository:
             query = query.filter(PublicationSchedule.schedule_type == schedule_type)
         
         return query.order_by(PublicationSchedule.scheduled_at).all()
+
+    def get_with_filters(
+        self,
+        channel_id: Optional[str] = None,
+        video_id: Optional[str] = None,
+        status: Optional[str] = None,
+        schedule_type: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        include_history: bool = True,
+    ) -> List[PublicationSchedule]:
+        """Get schedules with optional filters"""
+        query = self.db.query(PublicationSchedule)
+        
+        if channel_id:
+            query = query.filter(PublicationSchedule.channel_id == channel_id)
+        if video_id:
+            query = query.filter(PublicationSchedule.video_id == video_id)
+        if status:
+            query = query.filter(PublicationSchedule.status == status)
+        if schedule_type:
+            query = query.filter(PublicationSchedule.schedule_type == schedule_type)
+        if start_date:
+            query = query.filter(PublicationSchedule.scheduled_at >= start_date)
+        if end_date:
+            query = query.filter(PublicationSchedule.scheduled_at <= end_date)
+        if not include_history:
+            query = query.filter(
+                PublicationSchedule.status.in_(["pending", "scheduled", "executing"])
+            )
+        
+        return query.order_by(PublicationSchedule.scheduled_at).all()

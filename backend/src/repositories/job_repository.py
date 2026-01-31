@@ -81,6 +81,31 @@ class JobRepository:
             .all()
         )
 
+    def get_all(
+        self,
+        status: Optional[str] = None,
+        channel_id: Optional[str] = None,
+        job_type: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> tuple[List[VideoProcessingJob], int]:
+        """Get all jobs with optional filters, ordered by created_at desc"""
+        query = self.db.query(VideoProcessingJob)
+        if status:
+            query = query.filter(VideoProcessingJob.status == status)
+        if channel_id:
+            query = query.filter(VideoProcessingJob.channel_id == channel_id)
+        if job_type:
+            query = query.filter(VideoProcessingJob.job_type == job_type)
+        total = query.count()
+        query = query.order_by(desc(VideoProcessingJob.created_at))
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        jobs = query.all()
+        return jobs, total
+
     def update(self, job: VideoProcessingJob) -> VideoProcessingJob:
         """Update an existing job"""
         self.db.commit()

@@ -2,7 +2,7 @@
 Configuration repository - data access layer for system configuration
 """
 
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 import json
 
 from sqlalchemy.orm import Session
@@ -91,6 +91,10 @@ class ConfigRepository:
             except json.JSONDecodeError:
                 result[config.key] = config.value
         return result
+
+    def get_all_entries(self) -> List[SystemConfiguration]:
+        """Get all configuration entries as list"""
+        return self.db.query(SystemConfiguration).all()
 
     def exists(self, key: str) -> bool:
         """Check if configuration key exists"""

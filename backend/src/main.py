@@ -11,6 +11,11 @@ from src.middleware.error_handler import setup_error_handlers
 from src.utils.health_check import perform_health_check
 from src.utils.logging import setup_logging
 from src.api.orchestration import router as orchestration_router
+from src.api.queue import router as queue_router
+from src.api.config import router as config_router
+from src.api.transformation_presets import router as transformation_presets_router
+from src.api.statistics import router as statistics_router
+from src.api.channels import router as channels_router
 from src.api.music import router as music_router
 from src.api.audio_replacement import router as audio_replacement_router
 from src.api.phase2 import router as phase2_router
@@ -44,6 +49,11 @@ setup_error_handlers(app)
 
 # Include routers
 app.include_router(orchestration_router)
+app.include_router(queue_router)
+app.include_router(config_router)
+app.include_router(transformation_presets_router)
+app.include_router(statistics_router)
+app.include_router(channels_router)
 app.include_router(music_router)
 app.include_router(audio_replacement_router)
 app.include_router(phase2_router)
@@ -58,6 +68,7 @@ async def root():
 
 
 @app.get("/health", tags=["System"])
+@app.get("/api/health", tags=["System"])
 async def health_check():
     """
     Health check endpoint
