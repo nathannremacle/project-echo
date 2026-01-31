@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
+from src.config import settings
 from src.repositories.channel_repository import ChannelRepository
 from src.repositories.video_repository import VideoRepository
 from src.repositories.config_repository import ConfigRepository
@@ -40,7 +41,11 @@ class CentralOrchestrationService:
         self.queue_service = QueueService(db)
         self.pipeline_service = PipelineService(db)
         self.config_service = ChannelConfigurationService(db)
-        self.github_service = GitHubRepositoryService(db)
+        # GitHub service only when GITHUB_TOKEN is set (avoids crash at startup)
+        try:
+            self.github_service = GitHubRepositoryService(db) if settings.GITHUB_TOKEN else None
+        except Exception:
+            self.github_service = None
         self.scheduling_service = SchedulingService(db)
         self.distribution_service = VideoDistributionService(db)
         self.stats_service = YouTubeStatisticsService(db)
@@ -207,6 +212,8 @@ class CentralOrchestrationService:
         
         # Check if channel has GitHub repository
         if channel.github_repo_url:
+            if not self.github_service:
+                raise ValidationError("GITHUB_TOKEN not configured - required for GitHub Actions")
             # Trigger via GitHub Actions
             result = self.github_service.trigger_workflow(
                 channel_id=channel_id,
@@ -342,12 +349,16 @@ class CentralOrchestrationService:
             try:
                 # Check if channel has GitHub repository
                 if channel.github_repo_url:
-                    repo_info = self.github_service.get_repository_info(channel.id)
-                    if repo_info.get("exists"):
-                        status["health"] = "healthy"
+                    if self.github_service:
+                        repo_info = self.github_service.get_repository_info(channel.id)
+                        if repo_info.get("exists"):
+                            status["health"] = "healthy"
+                        else:
+                            status["health"] = "warning"
+                            status["errors"].append("GitHub repository not found")
                     else:
                         status["health"] = "warning"
-                        status["errors"].append("GitHub repository not found")
+                        status["errors"].append("GITHUB_TOKEN not configured")
                 else:
                     status["health"] = "warning"
                     status["errors"].append("No GitHub repository configured")
@@ -472,7 +483,7 @@ class CentralOrchestrationService:
         
         for channel in channels:
             try:
-                if channel.github_repo_url:
+                if channel.github_repo_url and self.github_service:
                     # Sync secrets
                     secrets_info = self.github_service.sync_secrets_from_channel(channel.id)
                     logger.info(f"Synced secrets for channel {channel.id}")

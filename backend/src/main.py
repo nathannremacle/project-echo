@@ -74,11 +74,12 @@ async def health_check():
     """
     health = perform_health_check()
     
-    # Return appropriate status code
-    if health.status == "healthy":
-        status_code = status.HTTP_200_OK
-    else:
+    # Return 200 for healthy and degraded (app can run); 503 only when unhealthy
+    # This prevents DigitalOcean from restarting containers when config is incomplete
+    if health.status == "unhealthy":
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        status_code = status.HTTP_200_OK
     
     return JSONResponse(
         content=health.model_dump(),

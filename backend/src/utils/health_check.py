@@ -105,24 +105,22 @@ def check_configuration() -> Tuple[str, str]:
         Tuple of (status, message)
     """
     try:
-        # Check critical settings
-        issues = []
-        
-        # Database URL should be set
+        # Critical: DATABASE_URL must be set
         if not settings.DATABASE_URL:
-            issues.append("DATABASE_URL not set")
+            return "error", "DATABASE_URL not set"
         
-        # In production, check for required secrets
+        # In production, JWT/ENCRYPTION are recommended but not blocking for health check
+        # (returning "error" would cause 503 and container restarts on DigitalOcean)
         if settings.is_production():
+            warnings = []
             if not settings.JWT_SECRET_KEY:
-                issues.append("JWT_SECRET_KEY not set (required in production)")
+                warnings.append("JWT_SECRET_KEY not set")
             if not settings.ENCRYPTION_KEY:
-                issues.append("ENCRYPTION_KEY not set (required in production)")
+                warnings.append("ENCRYPTION_KEY not set")
+            if warnings:
+                return "ok", f"Configuration loaded (warnings: {', '.join(warnings)})"
         
-        if issues:
-            return "error", f"Configuration issues: {', '.join(issues)}"
-        else:
-            return "ok", "Configuration loaded successfully"
+        return "ok", "Configuration loaded successfully"
     except Exception as e:
         logger.error(f"Configuration check failed: {e}")
         return "error", f"Configuration check error: {str(e)}"

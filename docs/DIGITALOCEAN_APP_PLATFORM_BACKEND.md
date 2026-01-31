@@ -93,6 +93,23 @@ python scripts/seed_db.py
 
 **Note :** Vérifiez que `GITHUB_TOKEN` est configuré si vous utilisez l’orchestration (monitoring de dépôts). Son absence peut provoquer une 500 au chargement du dashboard.
 
+## Run Command et port 8080
+
+- **Run Command** : `sh start.sh` (si Source = `/backend`) ou `cd backend && sh start.sh` (si Source = `/`)
+- **start.sh** utilise `--host 0.0.0.0` et `--port ${PORT:-8080}` (compatible cloud)
+- DigitalOcean définit `PORT` automatiquement ; le fallback 8080 est correct
+
+## Health Check et crash loop
+
+Si l'app est marquée "Degraded" et les conteneurs redémarrent en boucle :
+- Le health check `/api/health` renvoie désormais **200** pour "healthy" et "degraded"
+- Seul "unhealthy" (toutes les vérifications en erreur) renvoie 503
+- Configurez `JWT_SECRET_KEY` et `ENCRYPTION_KEY` en production pour éviter les warnings
+
+## 404 sur certaines pages (frontend SPA)
+
+Pour un site statique React avec routing client-side, configurez la **404 / Error Document** sur `index.html` dans les paramètres du composant Static Site. Ainsi, `/channels`, `/queue`, etc. serviront l'app et React Router gérera les routes.
+
 ## Garder `backend/shared` à jour
 
 Après modification de `shared/` à la racine, resynchroniser :
