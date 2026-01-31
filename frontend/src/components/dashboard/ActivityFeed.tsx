@@ -8,12 +8,19 @@ import {
   Chip,
   Box,
 } from '@mui/material';
-import { VideoLibrary, CheckCircle, Error } from '@mui/icons-material';
+import { VideoLibrary, CheckCircle, Error, Info } from '@mui/icons-material';
 import { DashboardData } from '../../services/orchestration';
 
 interface ActivityFeedProps {
   data: DashboardData;
 }
+
+// Setup warnings that are not real errors (expected for new/test channels)
+const SETUP_WARNINGS = [
+  'No GitHub repository configured',
+  'GITHUB_TOKEN not configured',
+  'GitHub repository not found',
+];
 
 export default function ActivityFeed({ data }: ActivityFeedProps) {
   // Generate activity items from dashboard data
@@ -21,39 +28,42 @@ export default function ActivityFeed({ data }: ActivityFeedProps) {
     type: 'publication' | 'system';
     message: string;
     timestamp?: string;
-    status?: 'success' | 'error';
+    status?: 'success' | 'error' | 'info';
   }> = [];
 
-  // Add channel activities
+  // Add channel activities (only real errors, not setup warnings)
   data.channels.statuses.forEach((channel) => {
-    if (channel.statistics.published_7d > 0) {
+    if (channel.statistics?.published_7d > 0) {
       activities.push({
         type: 'publication',
         message: `${channel.name}: ${channel.statistics.published_7d} videos published`,
         status: 'success',
       });
     }
-    if (channel.errors && channel.errors.length > 0) {
+    const realErrors = (channel.errors || []).filter(
+      (e) => !SETUP_WARNINGS.some((w) => e.includes(w))
+    );
+    if (realErrors.length > 0) {
       activities.push({
         type: 'system',
-        message: `${channel.name}: ${channel.errors[0]}`,
+        message: `${channel.name}: ${realErrors[0]}`,
         status: 'error',
       });
     }
   });
 
-  // Add system activities
+  // System status: "stopped" is the default state, not an error
   if (!data.system.status.running) {
     activities.push({
       type: 'system',
-      message: 'Orchestration system stopped',
-      status: 'error',
+      message: 'Orchestration system stopped (click Start to run)',
+      status: 'info',
     });
   } else if (data.system.status.paused) {
     activities.push({
       type: 'system',
       message: 'Orchestration system paused',
-      status: 'error',
+      status: 'info',
     });
   }
 
@@ -77,18 +87,18 @@ export default function ActivityFeed({ data }: ActivityFeedProps) {
                 <Box display="flex" alignItems="center" gap={1} width="100%">
                   {activity.type === 'publication' ? (
                     <VideoLibrary fontSize="small" color="primary" />
+                  ) : activity.status === 'error' ? (
+                    <Error fontSize="small" color="error" />
+                  ) : activity.status === 'info' ? (
+                    <Info fontSize="small" color="info" />
                   ) : (
-                    activity.status === 'error' ? (
-                      <Error fontSize="small" color="error" />
-                    ) : (
-                      <CheckCircle fontSize="small" color="success" />
-                    )
+                    <CheckCircle fontSize="small" color="success" />
                   )}
                   <ListItemText
                     primary={activity.message}
                     secondary={activity.timestamp || 'Recently'}
                   />
-                  {activity.status && (
+                  {activity.status && activity.status !== 'info' && (
                     <Chip
                       label={activity.status}
                       color={activity.status === 'success' ? 'success' : 'error'}
