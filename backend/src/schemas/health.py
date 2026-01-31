@@ -5,7 +5,7 @@ Health check response schemas
 from datetime import datetime
 from typing import Dict, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class ComponentCheck(BaseModel):
@@ -22,6 +22,11 @@ class HealthCheckResponse(BaseModel):
         ..., description="Overall health status"
     )
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Check timestamp")
+
+    @field_serializer("timestamp")
+    def serialize_timestamp(self, dt: datetime) -> str:
+        """Serialize datetime to ISO format string for JSON"""
+        return dt.isoformat()
     version: str = Field(default="1.0.0", description="API version")
     checks: Dict[str, ComponentCheck] = Field(..., description="Individual component checks")
 

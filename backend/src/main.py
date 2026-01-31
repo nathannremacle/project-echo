@@ -82,7 +82,7 @@ async def health_check():
         status_code = status.HTTP_200_OK
     
     return JSONResponse(
-        content=health.model_dump(),
+        content=health.model_dump(mode="json"),
         status_code=status_code,
     )
 
