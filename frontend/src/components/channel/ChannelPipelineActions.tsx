@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { PlayArrow, Add } from '@mui/icons-material';
 import { orchestrationService } from '../../services/orchestration';
+import { getApiErrorMessage } from '../../services/api';
 
 interface ChannelPipelineActionsProps {
   channelId: string;
@@ -38,8 +39,8 @@ export default function ChannelPipelineActions({ channelId }: ChannelPipelineAct
       setSourceUrl('');
       setError(null);
     },
-    onError: (err: Error) => {
-      setError(err.message);
+    onError: (err: unknown) => {
+      setError(getApiErrorMessage(err));
     },
   });
 
@@ -65,6 +66,11 @@ export default function ChannelPipelineActions({ channelId }: ChannelPipelineAct
 
   return (
     <Box display="flex" flexDirection="column" gap={2}>
+      {error && !addVideoOpen && (
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
       <Box display="flex" gap={2} flexWrap="wrap">
         <Button
           variant="contained"
@@ -95,6 +101,11 @@ export default function ChannelPipelineActions({ channelId }: ChannelPipelineAct
         <DialogTitle>Ajouter une vidéo à scraper</DialogTitle>
         <DialogContent>
           <Box pt={2}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
             <TextField
               fullWidth
               label="URL de la vidéo"
@@ -104,11 +115,6 @@ export default function ChannelPipelineActions({ channelId }: ChannelPipelineAct
               helperText="Collez l'URL d'une vidéo YouTube (ou autre source supportée)"
               sx={{ mb: 2 }}
             />
-            {error && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
           </Box>
         </DialogContent>
         <DialogActions>

@@ -256,16 +256,19 @@ class ScrapingService:
         
         return result
 
-    def scrape_single_video(self, url: str, channel_id: str) -> Optional[Video]:
+    def scrape_single_video(
+        self, url: str, channel_id: str, raise_on_failure: bool = False
+    ) -> Optional[Video]:
         """
         Scrape a single video and store it
         
         Args:
             url: Video URL
             channel_id: Channel ID
+            raise_on_failure: If True, raise exception instead of returning None
             
         Returns:
-            Created Video object or None if failed
+            Created Video object or None if failed (when raise_on_failure=False)
         """
         try:
             # Scrape metadata
@@ -273,7 +276,10 @@ class ScrapingService:
             
             # Check for duplicates
             if self._is_duplicate(url, channel_id):
-                logger.info(f"Video already exists: {url}")
+                msg = f"Cette vidéo est déjà dans la base pour cette chaîne: {url}"
+                if raise_on_failure:
+                    raise ScrapingError(msg)
+                logger.info(msg)
                 return None
             
             # Store video
@@ -283,27 +289,36 @@ class ScrapingService:
             return video
             
         except VideoUnavailableError as e:
-            logger.warning(f"Video unavailable: {url} - {str(e)}")
+            msg = f"Vidéo indisponible (privée, supprimée ou restreinte): {str(e)}"
+            if raise_on_failure:
+                raise ScrapingError(msg)
+            logger.warning(msg)
             return None
         except ScrapingError as e:
+            if raise_on_failure:
+                raise
             logger.error(f"Scraping error for {url}: {str(e)}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected error scraping {url}: {str(e)}")
+            msg = f"Erreur lors du scraping: {str(e)}"
+            if raise_on_failure:
+                raise ScrapingError(msg)
+            logger.error(msg)
             return None
 
     def scrape_video_url(self, url: str, channel_id: str) -> Dict[str, Any]:
         """
         Scrape a single video URL and return format compatible with pipeline.
+        Raises ScrapingError on failure (for single-URL pipeline, we want to report the real error).
         
         Args:
             url: Video URL (YouTube, etc.)
             channel_id: Channel ID
             
         Returns:
-            Dict with "videos" key containing list of Video objects (empty if failed)
+            Dict with "videos" key containing list of Video objects
         """
-        video = self.scrape_single_video(url, channel_id)
+        video = self.scrape_single_video(url, channel_id, raise_on_failure=True)
         return {"videos": [video] if video else []}
 
     def scrape_channel_for_pipeline(self, channel_id: str) -> Dict[str, Any]:

@@ -39,3 +39,19 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+/** Extract user-friendly error message from API error (axios) */
+export function getApiErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: string | string[] } } }).response;
+    const detail = response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0];
+      return typeof first === 'object' && first && 'msg' in first
+        ? String((first as { msg: string }).msg)
+        : String(first);
+    }
+  }
+  return error instanceof Error ? error.message : String(error);
+}

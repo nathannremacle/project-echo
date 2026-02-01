@@ -21,6 +21,7 @@ import {
 import { Refresh, Add } from '@mui/icons-material';
 import { queueService, QueueFilters } from '../services/queue';
 import { orchestrationService } from '../services/orchestration';
+import { getApiErrorMessage } from '../services/api';
 import QueueList from '../components/queue/QueueList';
 import QueueFiltersComponent from '../components/queue/QueueFilters';
 import QueueStatistics from '../components/queue/QueueStatistics';
@@ -32,6 +33,7 @@ export default function Queue() {
   const [addVideoOpen, setAddVideoOpen] = useState(false);
   const [addVideoUrl, setAddVideoUrl] = useState('');
   const [addVideoChannelId, setAddVideoChannelId] = useState('');
+  const [addVideoError, setAddVideoError] = useState<string | null>(null);
 
   // Fetch jobs
   const {
@@ -120,6 +122,10 @@ export default function Queue() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setAddVideoOpen(false);
       setAddVideoUrl('');
+      setAddVideoError(null);
+    },
+    onError: (err: unknown) => {
+      setAddVideoError(getApiErrorMessage(err));
     },
   });
 
@@ -201,10 +207,23 @@ export default function Queue() {
       </Box>
 
       {/* Add Video Dialog */}
-      <Dialog open={addVideoOpen} onClose={() => setAddVideoOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={addVideoOpen}
+        onClose={() => {
+          setAddVideoOpen(false);
+          setAddVideoError(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Ajouter une vidéo à scraper</DialogTitle>
         <DialogContent>
           <Box pt={2} display="flex" flexDirection="column" gap={2}>
+            {addVideoError && (
+              <Alert severity="error" onClose={() => setAddVideoError(null)}>
+                {addVideoError}
+              </Alert>
+            )}
             <FormControl fullWidth>
               <InputLabel>Chaîne</InputLabel>
               <Select

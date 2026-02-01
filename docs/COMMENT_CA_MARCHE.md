@@ -87,6 +87,18 @@
 
 ---
 
+## Erreurs fréquentes
+
+| Message | Cause probable | Solution |
+|---------|----------------|----------|
+| **Vidéo indisponible** | Vidéo privée, supprimée, ou restreinte (âge) | Vérifier l'URL, essayer une autre vidéo |
+| **Cette vidéo est déjà dans la base** | Vidéo déjà scrappée pour cette chaîne | Utiliser une autre vidéo ou une autre chaîne |
+| **Erreur lors du scraping** | URL invalide, réseau, ou yt-dlp | Vérifier l'URL (format YouTube), connexion internet |
+| **Pipeline failed at download** | S3/Spaces non configuré | Configurer les variables d'environnement S3 |
+| **Pipeline failed at transform** | Preset manquant ou FFmpeg | Vérifier Settings → Transformation Presets |
+
+---
+
 ## Pour aller plus loin
 
 - **Tutoriel détaillé** : [TUTORIEL_A_Z.md](./TUTORIEL_A_Z.md)  
