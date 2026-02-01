@@ -18,7 +18,8 @@ from shared.src.transformation import (
     TransformationError,
     PresetNotFoundError,
 )
-from shared.src.download import S3StorageClient
+from shared.src.download import S3StorageClient, LocalStorageClient
+from shared.src.download.exceptions import StorageError
 from src.models.video import Video
 from src.models.job import VideoProcessingJob
 from src.repositories.video_repository import VideoRepository
@@ -48,14 +49,25 @@ class TransformationService:
         # Initialize quality validator
         self.quality_validator = QualityValidator()
         
-        # Initialize storage client
-        self.storage = S3StorageClient(
-            bucket_name=settings.AWS_S3_BUCKET,
-            access_key_id=settings.AWS_ACCESS_KEY_ID,
-            secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region=settings.AWS_REGION,
-            endpoint_url=getattr(settings, 'S3_ENDPOINT_URL', None),
-        )
+        # Initialize storage client: use S3/Spaces if configured; local storage only in dev
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            self.storage = S3StorageClient(
+                bucket_name=settings.AWS_S3_BUCKET,
+                access_key_id=settings.AWS_ACCESS_KEY_ID,
+                secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region=settings.AWS_REGION,
+                endpoint_url=getattr(settings, 'S3_ENDPOINT_URL', None),
+            )
+        elif settings.is_development():
+            logger.info("S3 credentials not configured - using local storage for transformed videos")
+            self.storage = LocalStorageClient(
+                base_dir=os.path.join(os.getcwd(), "data", "videos"),
+            )
+        else:
+            raise StorageError(
+                "S3/Spaces credentials required in production. Configure AWS_ACCESS_KEY_ID, "
+                "AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, and S3_ENDPOINT_URL (for DigitalOcean Spaces)."
+            )
 
     def _load_preset_params(self, preset_id: Optional[str]) -> Dict[str, Any]:
         """
@@ -181,38 +193,52 @@ class TransformationService:
                 params = randomize_preset_params(params, randomization_config)
                 logger.debug(f"Applied parameter randomization for video {video_id}")
             
-            # Download video from S3 to local temp file
-            import tempfile
-            import boto3
-            from urllib.parse import urlparse
-            
-            # Parse S3 URL
-            s3_url = video.download_url
-            if not s3_url.startswith("s3://"):
-                raise TransformationError(f"Invalid S3 URL: {s3_url}")
-            
-            # Extract bucket and key from S3 URL
-            parsed = urlparse(s3_url)
-            bucket_name = parsed.netloc
-            s3_key = parsed.path.lstrip("/")
-            
-            # Download to temp file
+            # Get video file: handle both s3:// and file:// URLs
+            video_url = video.download_url
             temp_input_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             temp_input_file.close()
-            
-            try:
-                s3_client = boto3.client(
-                    "s3",
-                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                    region_name=settings.AWS_REGION,
-                )
-                s3_client.download_file(bucket_name, s3_key, temp_input_file.name)
-                local_input_file = temp_input_file.name
-                logger.debug(f"Downloaded video from S3 to {local_input_file}")
-            except Exception as e:
-                os.unlink(temp_input_file.name)  # Clean up on error
-                raise TransformationError(f"Failed to download video from S3: {str(e)}") from e
+            cleanup_input_file = False  # Only True for S3 temp download
+
+            if video_url.startswith("file://"):
+                # Local storage (development mode) - use path directly
+                local_input_file = LocalStorageClient.get_local_path(video_url)
+                if not os.path.exists(local_input_file):
+                    raise TransformationError(f"Local video file not found: {local_input_file}")
+                os.unlink(temp_input_file.name)  # Not needed for local
+                cleanup_input_file = False  # Don't delete source file
+                logger.debug(f"Using local video file: {local_input_file}")
+            elif video_url.startswith("s3://"):
+                # S3 storage
+                import boto3
+                from urllib.parse import urlparse
+
+                parsed = urlparse(video_url)
+                bucket_name = parsed.netloc
+                s3_key = parsed.path.lstrip("/")
+
+                try:
+                    s3_config = {
+                        "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+                        "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+                        "region_name": settings.AWS_REGION,
+                    }
+                    if getattr(settings, "S3_ENDPOINT_URL", None):
+                        s3_config["endpoint_url"] = (
+                            settings.S3_ENDPOINT_URL
+                            if settings.S3_ENDPOINT_URL.startswith("http")
+                            else f"https://{settings.S3_ENDPOINT_URL}"
+                        )
+                    s3_client = boto3.client("s3", **s3_config)
+                    s3_client.download_file(bucket_name, s3_key, temp_input_file.name)
+                    local_input_file = temp_input_file.name
+                    cleanup_input_file = True  # Temp file, safe to delete
+                    logger.debug(f"Downloaded video from S3 to {local_input_file}")
+                except Exception as e:
+                    os.unlink(temp_input_file.name)
+                    raise TransformationError(f"Failed to download video from S3: {str(e)}") from e
+            else:
+                os.unlink(temp_input_file.name)
+                raise TransformationError(f"Invalid video URL (expected s3:// or file://): {video_url}")
             
             # Transform video with fallback on error
             start_time = time.time()
@@ -299,8 +325,8 @@ class TransformationService:
             
             # Clean up local files
             try:
-                # Remove input temp file
-                if os.path.exists(local_input_file):
+                # Remove input temp file (only if it was a temp copy, not source file)
+                if cleanup_input_file and os.path.exists(local_input_file):
                     os.unlink(local_input_file)
                     logger.debug(f"Cleaned up input temp file: {local_input_file}")
                 # Remove output file
@@ -320,21 +346,21 @@ class TransformationService:
             logger.error(f"Transformation error for video {video_id}: {str(e)}")
             self._update_video_status(video, "failed")
             self._update_job(job, "failed", error=str(e))
-            # Clean up temp file on error
+            # Clean up temp file on error (only if it was a temp copy)
             try:
-                if 'local_input_file' in locals() and os.path.exists(local_input_file):
+                if cleanup_input_file and local_input_file and os.path.exists(local_input_file):
                     os.unlink(local_input_file)
-            except Exception:
+            except (NameError, Exception):
                 pass
             raise
         except Exception as e:
             logger.error(f"Unexpected error transforming video {video_id}: {str(e)}")
             self._update_video_status(video, "failed")
             self._update_job(job, "failed", error=str(e))
-            # Clean up temp file on error
+            # Clean up temp file on error (only if it was a temp copy)
             try:
-                if 'local_input_file' in locals() and os.path.exists(local_input_file):
+                if cleanup_input_file and local_input_file and os.path.exists(local_input_file):
                     os.unlink(local_input_file)
-            except Exception:
+            except (NameError, Exception):
                 pass
             raise TransformationError(f"Unexpected error: {str(e)}") from e

@@ -7,4 +7,8 @@
 cd "$(dirname "$0")"
 ROOT="$(cd .. 2>/dev/null && pwd)"
 export PYTHONPATH="$(pwd):${ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+
+# Run migrations before starting (idempotent)
+alembic upgrade head 2>/dev/null || true
+
 exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8080}"

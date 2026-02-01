@@ -94,13 +94,14 @@
 | **Vidéo indisponible** | Vidéo privée, supprimée, ou restreinte (âge) | Vérifier l'URL, essayer une autre vidéo |
 | **Cette vidéo est déjà dans la base** | Vidéo déjà scrappée pour cette chaîne | Utiliser une autre vidéo ou une autre chaîne |
 | **Erreur lors du scraping** | URL invalide, réseau, ou yt-dlp | Vérifier l'URL (format YouTube), connexion internet |
-| **Pipeline failed at download** | S3/Spaces non configuré | Configurer les variables d'environnement S3 |
+| **Pipeline failed at download** | S3/Spaces non configuré | En dev sans S3 : stockage local automatique. En prod : configurer AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY |
 | **Pipeline failed at transform** | Preset manquant ou FFmpeg | Vérifier Settings → Transformation Presets |
 
 ---
 
 ## Pour aller plus loin
 
+- **Checklist fonctionnel (DigitalOcean)** : [RENDRE_FONCTIONNEL.md](./RENDRE_FONCTIONNEL.md)  
 - **Tutoriel détaillé** : [TUTORIEL_A_Z.md](./TUTORIEL_A_Z.md)  
 - **Déploiement** : [QUICK_START.md](./QUICK_START.md)  
 - **Architecture technique** : [architecture.md](./architecture.md)

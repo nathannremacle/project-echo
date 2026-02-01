@@ -20,6 +20,7 @@ from src.repositories.channel_repository import ChannelRepository
 from src.utils.logging import get_logger
 from src.utils.exceptions import NotFoundError, AuthenticationError, ProcessingError
 from src.config import settings
+from shared.src.download import LocalStorageClient
 
 logger = get_logger(__name__)
 
@@ -99,48 +100,56 @@ class YouTubeUploadService:
             "privacy_status": privacy,
         }
 
-    def _download_video_from_s3(self, s3_url: str, local_path: str) -> None:
+    def _get_video_local_path(self, video_url: str, local_path: str) -> None:
         """
-        Download video from S3 to local file
+        Get video file locally: copy from file:// or download from S3.
         
         Args:
-            s3_url: S3 URL (s3://bucket/key or https://bucket.s3.region.amazonaws.com/key)
-            local_path: Local file path to save video
+            video_url: Video URL (file:// or s3://)
+            local_path: Local file path to save video (for S3 download)
         """
+        if video_url.startswith("file://"):
+            # Local storage (development mode)
+            source_path = LocalStorageClient.get_local_path(video_url)
+            if not os.path.exists(source_path):
+                raise ProcessingError(f"Local video file not found: {source_path}")
+            import shutil
+            shutil.copy2(source_path, local_path)
+            logger.info(f"Copied local video: {source_path} to {local_path}")
+            return
+
+        # S3 storage
         try:
-            # Parse S3 URL
-            if s3_url.startswith("s3://"):
-                # s3://bucket/key format
-                parts = s3_url.replace("s3://", "").split("/", 1)
+            from urllib.parse import urlparse
+            if video_url.startswith("s3://"):
+                parts = video_url.replace("s3://", "").split("/", 1)
                 bucket = parts[0]
                 key = parts[1] if len(parts) > 1 else ""
-            elif "s3.amazonaws.com" in s3_url or "s3." in s3_url:
-                # https://bucket.s3.region.amazonaws.com/key format
-                # Extract bucket and key from URL
-                from urllib.parse import urlparse
-                parsed = urlparse(s3_url)
+            elif "s3.amazonaws.com" in video_url or "s3." in video_url:
+                parsed = urlparse(video_url)
                 bucket = parsed.netloc.split(".")[0]
                 key = parsed.path.lstrip("/")
             else:
-                raise ValueError(f"Invalid S3 URL format: {s3_url}")
-            
-            # Download from S3
-            s3_client = boto3.client(
-                "s3",
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                region_name=settings.AWS_REGION,
-            )
-            
+                raise ValueError(f"Invalid video URL format: {video_url}")
+
+            s3_config = {
+                "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+                "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+                "region_name": settings.AWS_REGION,
+            }
+            if getattr(settings, "S3_ENDPOINT_URL", None):
+                ep = settings.S3_ENDPOINT_URL
+                s3_config["endpoint_url"] = ep if ep.startswith("http") else f"https://{ep}"
+
+            s3_client = boto3.client("s3", **s3_config)
             s3_client.download_file(bucket, key, local_path)
-            logger.info(f"Downloaded video from S3: {s3_url} to {local_path}")
-            
+            logger.info(f"Downloaded video from S3: {video_url} to {local_path}")
         except ClientError as e:
             logger.error(f"Failed to download video from S3: {e}")
             raise ProcessingError(f"Failed to download video from S3: {str(e)}")
         except Exception as e:
-            logger.error(f"Error downloading video from S3: {e}")
-            raise ProcessingError(f"Error downloading video from S3: {str(e)}")
+            logger.error(f"Error getting video file: {e}")
+            raise ProcessingError(f"Error getting video file: {str(e)}")
 
     def _upload_video_with_progress(
         self,
@@ -319,7 +328,7 @@ class YouTubeUploadService:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
                 temp_video_path = temp_file.name
             
-            self._download_video_from_s3(video.transformed_url, temp_video_path)
+            self._get_video_local_path(video.transformed_url, temp_video_path)
             
             # Upload video with progress tracking
             def progress_callback(bytes_uploaded: int, total_size: int):

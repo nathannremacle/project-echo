@@ -283,6 +283,9 @@ En mode central (sans dépôt GitHub), les chaînes affichent **healthy** : le p
 **Comment supprimer une chaîne ?**  
 → Actuellement via l’API ou la base de données. L’interface de suppression n’est pas encore exposée.
 
+**Faut-il configurer S3/Spaces pour tester en local ?**
+→ Non. Sans credentials S3 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY), le système utilise automatiquement un stockage local (`data/videos/`). En production, configurez S3 ou DigitalOcean Spaces.
+
 ---
 
 ## Ressources

@@ -34,6 +34,7 @@ class TriggerPipelineRequest(BaseModel):
     channel_id: str
     video_id: Optional[str] = None
     source_url: Optional[str] = None
+    skip_upload: bool = False  # For testing: skip YouTube upload step
 
 
 class BulkScheduleRequest(BaseModel):
@@ -159,6 +160,7 @@ async def trigger_pipeline(
             channel_id=request.channel_id,
             video_id=request.video_id,
             source_url=request.source_url,
+            skip_upload=request.skip_upload,
         )
         return result
     except Exception as e:

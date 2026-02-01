@@ -195,6 +195,7 @@ class CentralOrchestrationService:
         channel_id: str,
         video_id: Optional[str] = None,
         source_url: Optional[str] = None,
+        skip_upload: bool = False,
     ) -> Dict[str, Any]:
         """
         Trigger pipeline for a channel (via GitHub Actions or direct execution)
@@ -238,6 +239,7 @@ class CentralOrchestrationService:
                 channel_id=channel_id,
                 source_url=source_url,
                 video_id=video_id,
+                skip_upload=skip_upload,
             )
             return {
                 "channel_id": channel_id,

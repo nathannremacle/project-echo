@@ -101,8 +101,12 @@ export const orchestrationService = {
     channel_id: string;
     video_id?: string;
     source_url?: string;
+    skip_upload?: boolean;
   }) => {
-    const response = await apiClient.post('/api/orchestration/trigger-pipeline', data);
+    // Pipeline can take several minutes (scrape + download + transform + upload)
+    const response = await apiClient.post('/api/orchestration/trigger-pipeline', data, {
+      timeout: 5 * 60 * 1000, // 5 minutes
+    });
     return response.data;
   },
 

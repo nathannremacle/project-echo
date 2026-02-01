@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from shared.src.download import (
     VideoDownloader,
     S3StorageClient,
+    LocalStorageClient,
     DownloadError,
     VideoUnavailableError,
     StorageError,
@@ -40,14 +41,25 @@ class DownloadService:
         os.makedirs(temp_dir, exist_ok=True)
         self.downloader = VideoDownloader(output_dir=temp_dir, progress_callback=self._progress_callback)
         
-        # Initialize storage client
-        self.storage = S3StorageClient(
-            bucket_name=settings.AWS_S3_BUCKET,
-            access_key_id=settings.AWS_ACCESS_KEY_ID,
-            secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region=settings.AWS_REGION,
-            endpoint_url=getattr(settings, 'S3_ENDPOINT_URL', None),
-        )
+        # Initialize storage client: use S3/Spaces if configured; local storage only in dev when S3 not set
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            self.storage = S3StorageClient(
+                bucket_name=settings.AWS_S3_BUCKET,
+                access_key_id=settings.AWS_ACCESS_KEY_ID,
+                secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region=settings.AWS_REGION,
+                endpoint_url=getattr(settings, 'S3_ENDPOINT_URL', None),
+            )
+        elif settings.is_development():
+            logger.info("S3 credentials not configured - using local file storage (development mode)")
+            self.storage = LocalStorageClient(
+                base_dir=os.path.join(os.getcwd(), "data", "videos"),
+            )
+        else:
+            raise StorageError(
+                "S3/Spaces credentials required in production. Configure AWS_ACCESS_KEY_ID, "
+                "AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, and S3_ENDPOINT_URL (for DigitalOcean Spaces)."
+            )
 
     def _progress_callback(self, d: Dict[str, Any]) -> None:
         """Callback for download progress updates"""
