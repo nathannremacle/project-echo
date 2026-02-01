@@ -81,11 +81,10 @@ class PipelineService:
                     if source_url:
                         # Scrape specific URL
                         scrape_result = self.scraping_service.scrape_video_url(source_url, channel_id)
-                        videos = scrape_result.get("videos", [])
                     else:
-                        # Scrape channel
-                        scrape_result = self.scraping_service.scrape_for_channel(channel_id)
-                        videos = scrape_result.get("videos", [])
+                        # Scrape channel sources
+                        scrape_result = self.scraping_service.scrape_channel_for_pipeline(channel_id)
+                    videos = scrape_result.get("videos", [])
                     
                     if not videos:
                         raise ProcessingError("No videos found during scraping")

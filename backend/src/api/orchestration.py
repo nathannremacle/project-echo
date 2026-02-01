@@ -33,6 +33,7 @@ class ScheduleWaveRequest(BaseModel):
 class TriggerPipelineRequest(BaseModel):
     channel_id: str
     video_id: Optional[str] = None
+    source_url: Optional[str] = None
 
 
 class BulkScheduleRequest(BaseModel):
@@ -150,12 +151,14 @@ async def trigger_pipeline(
     request: TriggerPipelineRequest,
     db: Session = Depends(get_db),
 ):
-    """Trigger pipeline for a channel"""
+    """Trigger pipeline for a channel (scrape → download → transform → upload).
+    Works without orchestration running - runs directly in central mode."""
     service = CentralOrchestrationService(db)
     try:
         result = service.trigger_pipeline(
             channel_id=request.channel_id,
             video_id=request.video_id,
+            source_url=request.source_url,
         )
         return result
     except Exception as e:

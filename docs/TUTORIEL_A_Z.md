@@ -2,6 +2,8 @@
 
 Guide complet pour comprendre et utiliser Project Echo, de l'ajout d'une chaîne YouTube jusqu'à la publication de vidéos.
 
+> **Vous voulez une explication courte et claire ?** → [COMMENT_CA_MARCHE.md](./COMMENT_CA_MARCHE.md)
+
 ---
 
 ## 1. Comment fonctionne le système
@@ -16,7 +18,7 @@ Guide complet pour comprendre et utiliser Project Echo, de l'ajout d'une chaîne
        │                    │
        │                    ├──▶ YouTube API (publication)
        │                    ├──▶ S3/Spaces (stockage vidéos)
-       │                    └──▶ GitHub (orchestration multi-repo)
+       │                    └──▶ GitHub (optionnel, mode multi-repo)
        │
        └──▶ Interface web : Dashboard, Chaînes, Queue, etc.
 ```
@@ -24,6 +26,18 @@ Guide complet pour comprendre et utiliser Project Echo, de l'ajout d'une chaîne
 - **Frontend** : Interface utilisateur (React + MUI)
 - **Backend** : API REST (FastAPI) qui gère les chaînes, vidéos, jobs, orchestration
 - **Base de données** : Chaînes, vidéos, jobs, configuration, etc.
+
+### Mode central vs multi-repo (GitHub)
+
+**Mode central (recommandé pour démarrer)** : Pas besoin de dépôt GitHub par chaîne.
+- Le pipeline (scrape → download → transform → upload) s'exécute **directement** dans le backend
+- Vous lancez le pipeline depuis l'interface (Chaînes → détail → « Lancer le pipeline » ou « Ajouter une vidéo »)
+- Les vidéos scrappées apparaissent dans **Queue** (onglet Vidéos)
+- Aucune configuration GitHub requise
+
+**Mode multi-repo** : Chaque chaîne a son propre dépôt GitHub avec GitHub Actions.
+- Utile pour isoler les credentials par chaîne ou déployer des workflows personnalisés
+- Nécessite la création d'un dépôt par chaîne (voir [MULTI-REPO-ARCHITECTURE.md](./MULTI-REPO-ARCHITECTURE.md))
 
 ### Flux de travail typique
 
@@ -190,12 +204,13 @@ Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peu
 | Message | Signification |
 |---------|---------------|
 | **Orchestration system stopped** | État par défaut, pas une erreur |
-| **No GitHub repository configured** | Chaîne sans dépôt GitHub (normal pour une chaîne de test) |
 | **X videos published** | Publications récentes |
+
+En mode central (sans dépôt GitHub), les chaînes affichent **healthy** : le pipeline s'exécute directement dans l'app.
 
 ---
 
-## 6. Gérer la file de traitement (Queue)
+## 7. Gérer la file de traitement (Queue)
 
 ### Vue Queue
 
@@ -211,7 +226,7 @@ Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peu
 
 ---
 
-## 7. Planning (Calendar)
+## 8. Planning (Calendar)
 
 - Planning des publications
 - Filtres : chaîne, vidéo, statut, dates
@@ -219,7 +234,7 @@ Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peu
 
 ---
 
-## 8. Paramètres (Settings)
+## 9. Paramètres (Settings)
 
 ### Configuration système
 
@@ -236,7 +251,7 @@ Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peu
 
 ---
 
-## 9. Récapitulatif du flux complet
+## 10. Récapitulatif du flux complet
 
 ```
 1. Déployer l'app (DigitalOcean)
@@ -244,20 +259,20 @@ Les credentials sont chiffrés et stockés de façon sécurisée. La chaîne peu
 3. Se connecter au Dashboard
 4. Channels → Ajouter une chaîne (test ou réelle)
 5. Cliquer sur la chaîne → Configurer → Activer
-6. (Optionnel) Settings → Phase 2 → Activer
-7. (Optionnel) Démarrer l'orchestration (Quick Actions)
-8. Surveiller Queue et Calendar
+6. Lancer le pipeline ou Ajouter une vidéo (URL) depuis la page Chaîne ou Queue
+7. (Optionnel) Settings → Phase 2 → Activer
+8. Surveiller Queue (vidéos scrappées, jobs) et Calendar
 ```
 
 ---
 
-## 10. FAQ rapide
+## 11. FAQ rapide
 
 **Où trouver mon YouTube Channel ID ?**  
 → YouTube Studio → Paramètres → Chaîne → Paramètres avancés
 
-**Pourquoi "No GitHub repository configured" ?**  
-→ C’est un avertissement pour les chaînes sans dépôt GitHub. Pas bloquant pour une chaîne de test.
+**Faut-il un dépôt GitHub par chaîne ?**  
+→ Non. En mode central, le pipeline s'exécute directement dans l'app. Un dépôt GitHub par chaîne est optionnel (mode multi-repo).
 
 **Comment publier vraiment sur YouTube ?**  
 → Configurer OAuth (Google Cloud + script `setup_youtube_oauth.py`), puis saisir Client ID, Client Secret et Refresh Token dans la page de détail de la chaîne (section « Credentials YouTube OAuth »).

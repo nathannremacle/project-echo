@@ -190,20 +190,26 @@ class CentralOrchestrationService:
             "schedule_ids": [s.id for s in schedules],
         }
 
-    def trigger_pipeline(self, channel_id: str, video_id: Optional[str] = None) -> Dict[str, Any]:
+    def trigger_pipeline(
+        self,
+        channel_id: str,
+        video_id: Optional[str] = None,
+        source_url: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Trigger pipeline for a channel (via GitHub Actions or queue)
+        Trigger pipeline for a channel (via GitHub Actions or direct execution)
+        
+        In central mode (no github_repo_url): runs pipeline directly in this process.
+        In multi-repo mode: triggers GitHub Actions workflow.
         
         Args:
             channel_id: Channel ID
             video_id: Optional video ID (if None, will scrape new video)
+            source_url: Optional source URL to scrape (YouTube, etc.)
             
         Returns:
             Dictionary with trigger results
         """
-        if not self._is_running or self._is_paused:
-            raise ValidationError("Orchestration system is not running or is paused")
-        
         channel = self.channel_repo.get_by_id(channel_id)
         if not channel:
             raise NotFoundError(f"Channel {channel_id} not found", resource_type="channel")
@@ -227,26 +233,17 @@ class CentralOrchestrationService:
                 "workflow_type": "process-video",
             }
         else:
-            # Trigger via queue service
-            if video_id:
-                # Create publish job
-                # Note: This would require QueueService to support publication jobs
-                logger.warning("Queue-based pipeline triggering not yet fully implemented")
-                return {
-                    "channel_id": channel_id,
-                    "method": "queue",
-                    "status": "not_implemented",
-                }
-            else:
-                # Run full pipeline
-                result = self.pipeline_service.run_pipeline(
-                    channel_id=channel_id,
-                )
-                return {
-                    "channel_id": channel_id,
-                    "method": "direct",
-                    "result": result,
-                }
+            # Central mode: run pipeline directly (no GitHub repo needed)
+            result = self.pipeline_service.execute_pipeline(
+                channel_id=channel_id,
+                source_url=source_url,
+                video_id=video_id,
+            )
+            return {
+                "channel_id": channel_id,
+                "method": "direct",
+                "result": result,
+            }
 
     def schedule_wave_publication(
         self,
@@ -347,8 +344,9 @@ class CentralOrchestrationService:
             
             # Check health
             try:
-                # Check if channel has GitHub repository
+                # Two modes: central (no GitHub repo) vs multi-repo (with GitHub)
                 if channel.github_repo_url:
+                    # Multi-repo mode: channel has its own GitHub repo
                     if self.github_service:
                         repo_info = self.github_service.get_repository_info(channel.id)
                         if repo_info.get("exists"):
@@ -360,8 +358,9 @@ class CentralOrchestrationService:
                         status["health"] = "warning"
                         status["errors"].append("GITHUB_TOKEN not configured")
                 else:
-                    status["health"] = "warning"
-                    status["errors"].append("No GitHub repository configured")
+                    # Central mode: pipeline runs directly in this app - no GitHub repo needed
+                    status["health"] = "healthy"
+                    # Don't add to errors - central mode is valid and expected
                 
                 # Check channel status
                 if channel.is_active:

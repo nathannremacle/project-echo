@@ -291,3 +291,33 @@ class ScrapingService:
         except Exception as e:
             logger.error(f"Unexpected error scraping {url}: {str(e)}")
             return None
+
+    def scrape_video_url(self, url: str, channel_id: str) -> Dict[str, Any]:
+        """
+        Scrape a single video URL and return format compatible with pipeline.
+        
+        Args:
+            url: Video URL (YouTube, etc.)
+            channel_id: Channel ID
+            
+        Returns:
+            Dict with "videos" key containing list of Video objects (empty if failed)
+        """
+        video = self.scrape_single_video(url, channel_id)
+        return {"videos": [video] if video else []}
+
+    def scrape_channel_for_pipeline(self, channel_id: str) -> Dict[str, Any]:
+        """
+        Scrape channel sources and return format compatible with pipeline.
+        
+        Args:
+            channel_id: Channel ID
+            
+        Returns:
+            Dict with "videos" key containing list of stored Video objects
+        """
+        result = self.scrape_for_channel(channel_id)
+        if result.videos_stored == 0:
+            return {"videos": []}
+        videos = self.video_repo.get_by_channel_id(channel_id, limit=result.videos_stored)
+        return {"videos": videos}

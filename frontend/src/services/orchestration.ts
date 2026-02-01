@@ -100,6 +100,7 @@ export const orchestrationService = {
   triggerPipeline: async (data: {
     channel_id: string;
     video_id?: string;
+    source_url?: string;
   }) => {
     const response = await apiClient.post('/api/orchestration/trigger-pipeline', data);
     return response.data;

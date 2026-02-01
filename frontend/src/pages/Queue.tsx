@@ -12,9 +12,15 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import { Refresh, Add } from '@mui/icons-material';
 import { queueService, QueueFilters } from '../services/queue';
+import { orchestrationService } from '../services/orchestration';
 import QueueList from '../components/queue/QueueList';
 import QueueFiltersComponent from '../components/queue/QueueFilters';
 import QueueStatistics from '../components/queue/QueueStatistics';
@@ -23,6 +29,9 @@ export default function Queue() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<QueueFilters>({});
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
+  const [addVideoOpen, setAddVideoOpen] = useState(false);
+  const [addVideoUrl, setAddVideoUrl] = useState('');
+  const [addVideoChannelId, setAddVideoChannelId] = useState('');
 
   // Fetch jobs
   const {
@@ -98,6 +107,22 @@ export default function Queue() {
     },
   });
 
+  // Add video mutation (trigger pipeline with source_url)
+  const addVideoMutation = useMutation({
+    mutationFn: ({ channelId, sourceUrl }: { channelId: string; sourceUrl: string }) =>
+      orchestrationService.triggerPipeline({
+        channel_id: channelId,
+        source_url: sourceUrl,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['queue-jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['queue-videos'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setAddVideoOpen(false);
+      setAddVideoUrl('');
+    },
+  });
+
   const handleRetry = (videoId: string) => {
     retryMutation.mutate(videoId);
   };
@@ -143,11 +168,25 @@ export default function Queue() {
     );
   }
 
+  const handleAddVideo = () => {
+    if (!addVideoChannelId || !addVideoUrl.trim()) return;
+    addVideoMutation.mutate({ channelId: addVideoChannelId, sourceUrl: addVideoUrl.trim() });
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">Video Processing Queue</Typography>
-        <Tooltip title="Refresh">
+        <Box display="flex" gap={1}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setAddVideoOpen(true)}
+            disabled={!channelsData?.channels?.length}
+          >
+            Ajouter une vidéo
+          </Button>
+          <Tooltip title="Refresh">
           <IconButton
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['queue-jobs'] });
@@ -158,7 +197,53 @@ export default function Queue() {
             <Refresh />
           </IconButton>
         </Tooltip>
+        </Box>
       </Box>
+
+      {/* Add Video Dialog */}
+      <Dialog open={addVideoOpen} onClose={() => setAddVideoOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Ajouter une vidéo à scraper</DialogTitle>
+        <DialogContent>
+          <Box pt={2} display="flex" flexDirection="column" gap={2}>
+            <FormControl fullWidth>
+              <InputLabel>Chaîne</InputLabel>
+              <Select
+                value={addVideoChannelId}
+                label="Chaîne"
+                onChange={(e) => setAddVideoChannelId(e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="">
+                  <em>Sélectionner une chaîne</em>
+                </MenuItem>
+                {channelsData?.channels?.map((ch) => (
+                  <MenuItem key={ch.id} value={ch.id}>
+                    {ch.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="URL de la vidéo"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={addVideoUrl}
+              onChange={(e) => setAddVideoUrl(e.target.value)}
+              helperText="Collez l'URL d'une vidéo YouTube (ou autre source supportée)"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddVideoOpen(false)}>Annuler</Button>
+          <Button
+            variant="contained"
+            onClick={handleAddVideo}
+            disabled={!addVideoChannelId || !addVideoUrl.trim() || addVideoMutation.isPending}
+          >
+            {addVideoMutation.isPending ? 'En cours...' : 'Scraper et lancer le pipeline'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Statistics */}
       {statistics && (

@@ -39,7 +39,9 @@ Each YouTube channel operates in its own isolated repository (`project-echo-chan
 
 ### 📖 Utilisation
 
-Une fois déployé, consultez: [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md)
+- **Comment ça marche ?** (résumé clair) : [docs/COMMENT_CA_MARCHE.md](docs/COMMENT_CA_MARCHE.md)
+- **Tutoriel complet** : [docs/TUTORIEL_A_Z.md](docs/TUTORIEL_A_Z.md)
+- **Guide d'utilisation détaillé** : [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md)
 
 ### 💻 Développement Local
 

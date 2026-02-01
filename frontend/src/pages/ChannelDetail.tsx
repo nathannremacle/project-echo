@@ -18,6 +18,7 @@ import ChannelInfo from '../components/channel/ChannelInfo';
 import ChannelStatistics from '../components/channel/ChannelStatistics';
 import ChannelConfiguration from '../components/channel/ChannelConfiguration';
 import ChannelCredentials from '../components/channel/ChannelCredentials';
+import ChannelPipelineActions from '../components/channel/ChannelPipelineActions';
 
 export default function ChannelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -164,6 +165,7 @@ export default function ChannelDetail() {
         {/* Right Column */}
         <Grid item xs={12} md={4}>
           <Box display="flex" flexDirection="column" gap={3}>
+            <ChannelPipelineActions channelId={channel.id} />
             <ChannelCredentials
               channelId={channel.id}
               onSuccess={() => queryClient.invalidateQueries({ queryKey: ['channel', id] })}
